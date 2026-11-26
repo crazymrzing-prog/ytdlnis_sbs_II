@@ -182,6 +182,21 @@
             app:title="@string/fragment_retries" />
     </PreferenceCategory>
 
+    <PreferenceCategory app:title="@string/sbs_on_demand">
+        <EditTextPreference
+            android:defaultValue=""
+            android:inputType="textEmailAddress"
+            app:key="sbs_email"
+            app:title="@string/sbs_email"
+            app:summary="@string/sbs_email_summary" />
+
+        <EditTextPreference
+            android:defaultValue=""
+            android:inputType="textPassword"
+            app:key="sbs_password"
+            app:title="@string/sbs_password"
+            app:summary="@string/sbs_password_summary" />
+    </PreferenceCategory>
     <PreferenceCategory app:title="@string/scheduling">
         <SwitchPreferenceCompat
             android:widgetLayout="@layout/preferece_material_switch"

@@ -45,6 +45,7 @@ import kotlin.collections.set
 import kotlin.concurrent.Volatile
 
 object RuntimeManager {
+    private lateinit var appContext: Context
     val idProcessMap = Collections.synchronizedMap(HashMap<String, Process>())
     lateinit var pythonLocation: PackageBase.PackageLocation
     lateinit var ffmpegLocation: PackageBase.PackageLocation
@@ -75,7 +76,27 @@ object RuntimeManager {
     const val BASENAME = "ytdlnis"
     const val ytdlpDirName = "yt-dlp"
     const val ytdlpBin = "yt-dlp"
+    private fun createSbsNetrcFile(): File? {
+        val preferences = androidx.preference.PreferenceManager
+            .getDefaultSharedPreferences(appContext)
 
+        val email = preferences.getString("sbs_email", "") ?: ""
+        val password = com.deniscerri.ytdl.util.SbsCredentialStore.get(appContext)
+
+        if (email.isBlank() || password.isNullOrBlank()) return null
+
+        fun escapeNetrc(value: String): String {
+            return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+        }
+
+        val netrcFile = File.createTempFile("sbs_netrc_", ".txt", appContext.cacheDir)
+
+        netrcFile.writeText(
+            "machine sbs login ${escapeNetrc(email)} password ${escapeNetrc(password)}\n"
+        )
+
+        return netrcFile
+    }
     private var ENV_LD_LIBRARY_PATH: String? = null
     private var PATH: String? = null
     private var ENV_SSL_CERT_FILE: String? = null
@@ -98,6 +119,7 @@ object RuntimeManager {
     )
 
     fun init(appContext: Context) {
+        this.appContext = appContext.applicationContext
         if (initialized) return
 
         synchronized(initLock) {
@@ -464,8 +486,19 @@ object RuntimeManager {
         usingCacheDir: Boolean = false,
         callback: ((Float, Long, String) -> Unit)? = null
     ) : ExecuteResponse {
-        val fullCommand = buildYTDLCommand(request, usingCacheDir)
-        return executeImpl(fullCommand, processId, redirectErrorStream, callback = callback)
+        val netrcFile = createSbsNetrcFile()
+
+        try {
+            if (netrcFile != null) {
+                request.addOption("--netrc")
+                request.addOption("--netrc-location", netrcFile.absolutePath)
+            }
+
+            val fullCommand = buildYTDLCommand(request, usingCacheDir)
+            return executeImpl(fullCommand, processId, redirectErrorStream, callback = callback)
+        } finally {
+            netrcFile?.delete()
+        }
     }
 
     fun executePython(
@@ -620,6 +653,7 @@ object RuntimeManager {
         } catch (e: IOException) {
             throw ExecuteException(e)
         }
+
         registerProcess(processId, process)
         return process
     }
@@ -630,8 +664,19 @@ object RuntimeManager {
         usingCacheDir: Boolean = false,
         outputHandler: (InputStream) -> T
     ): T {
-        val fullCommand = buildYTDLCommand(request, usingCacheDir)
-        return executeStreamingImpl(fullCommand, processId, outputHandler = outputHandler)
+        val netrcFile = createSbsNetrcFile()
+
+        try {
+            if (netrcFile != null) {
+                request.addOption("--netrc")
+                request.addOption("--netrc-location", netrcFile.absolutePath)
+            }
+
+            val fullCommand = buildYTDLCommand(request, usingCacheDir)
+            return executeStreamingImpl(fullCommand, processId, outputHandler = outputHandler)
+        } finally {
+            netrcFile?.delete()
+        }
     }
 
     fun <T> executeStreamingImpl(
@@ -667,7 +712,6 @@ object RuntimeManager {
             if (processId != null) idProcessMap.remove(processId)
         }
     }
-
     fun getEnvironment() : Map<String, String?> {
         val env = mutableMapOf<String, String?>()
 

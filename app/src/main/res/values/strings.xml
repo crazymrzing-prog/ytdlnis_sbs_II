@@ -762,4 +762,9 @@
     <string name="metadata_language">Language</string>
     <string name="metadata_purl">URL (purl)</string>
     <string name="metadata_synopsis">Synopsis</string>
+    <string name="sbs_on_demand">SBS On Demand</string>
+    <string name="sbs_email">SBS account email</string>
+    <string name="sbs_email_summary">Email address for your SBS On Demand account</string>
+    <string name="sbs_password">SBS account password</string>
+    <string name="sbs_password_summary">Password for your SBS On Demand account</string>
 </resources>

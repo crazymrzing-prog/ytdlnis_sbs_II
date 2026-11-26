@@ -15,6 +15,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.deniscerri.ytdl.ui.more.settings.SettingModule
 import com.deniscerri.ytdl.util.FileUtil
+import com.deniscerri.ytdl.util.SbsCredentialStore
 import com.deniscerri.ytdl.util.UiUtil
 import com.deniscerri.ytdl.util.AlarmScheduler
 import com.deniscerri.ytdl.work.background.CleanUpLeftoverDownloads
@@ -234,6 +235,17 @@ object DownloadSettingsModule : SettingModule {
                     }
                     host.refreshUI()
                     true
+                }
+            }
+            "sbs_password" -> {
+                (pref as EditTextPreference).apply {
+                    isPersistent = false
+                    text = SbsCredentialStore.get(context) ?: ""
+
+                    setOnPreferenceChangeListener { _, newValue ->
+                        SbsCredentialStore.save(context, newValue as? String ?: "")
+                        true
+                    }
                 }
             }
             "proxy" -> {
