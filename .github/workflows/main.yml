@@ -1,0 +1,15 @@
+      - name: Configure Keystore & Properties
+        env:
+          BASE_64_SIGNING_KEY: ${{ secrets.BASE_64_SIGNING_KEY }}
+          LOCAL_PROPERTIES: ${{ secrets.LOCAL_PROPERTIES }}
+        run: |
+          if [ -n "$BASE_64_SIGNING_KEY" ]; then
+            printf '%s' "$BASE_64_SIGNING_KEY" | base64 -d > app/release_keystore.jks
+          fi
+          : > local.properties
+          if [ -n "$LOCAL_PROPERTIES" ]; then
+            printf '%s' "$LOCAL_PROPERTIES" > keystore.properties
+          else
+            : > keystore.properties
+          fi
+          chmod +x gradlew
